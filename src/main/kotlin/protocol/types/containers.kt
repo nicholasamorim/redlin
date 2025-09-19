@@ -1,6 +1,5 @@
 package org.redlin.protocol.types
 
-import org.redlin.protocol.DataType
 import org.redlin.protocol.Deserializer
 import org.redlin.protocol.Serializer
 import org.redlin.protocol.deserializeArray

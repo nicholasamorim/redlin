@@ -4,7 +4,6 @@ import java.math.BigInteger
 import org.redlin.protocol.CRLF
 import org.redlin.protocol.Deserializer
 import org.redlin.protocol.Serializer
-import org.redlin.protocol.SimpleType
 
 object IntegerType : SimpleType<Long, Long> {
   override val firstByte

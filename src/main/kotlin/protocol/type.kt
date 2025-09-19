@@ -2,10 +2,6 @@ package org.redlin.protocol
 
 import org.redlin.protocol.types.*
 
-typealias Serializer<S> = (S) -> ByteArray
-
-typealias Deserializer<D> = (ByteArray) -> D
-
 internal fun mapOfTypes(vararg types: DataType<*, *>): Map<Int, DataType<*, *>> =
     types.associateBy { it.firstByte.code }
 
