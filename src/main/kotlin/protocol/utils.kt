@@ -5,6 +5,7 @@ import java.math.BigInteger
 const val CRLF = "\r\n"
 const val CRLF_FIRST_BYTE = '\r'.code.toByte()
 const val USE_BULK_STRING = true
+
 internal fun ByteArray.lengthUntilCRLF() = this.indexOf(CRLF_FIRST_BYTE)
 
 fun ByteArray.toDataType(): DataType<out Any?, out Any?> {

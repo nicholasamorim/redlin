@@ -182,15 +182,11 @@ object BooleanType : SimpleType<Boolean, Boolean> {
         { bytes -> bytes[1].toInt() == 't'.code }
 }
 
-internal val dataTypeMap = mapOf(
-    NullType.firstByte.code to NullType,
-    BooleanType.firstByte.code to BooleanType,
-    SimpleStringType.firstByte.code to SimpleStringType,
-    BulkStringType.firstByte.code to BulkStringType,
-    IntegerType.firstByte.code to IntegerType,
-    DoubleType.firstByte.code to DoubleType,
-    BigNumberType.firstByte.code to BigNumberType,
-    ArrayType.firstByte.code to ArrayType,
-    SimpleErrorType.firstByte.code to SimpleErrorType,
-    BulkErrorType.firstByte.code to BulkErrorType,
+internal fun mapOfTypes(vararg types: DataType<*, *>): Map<Int, DataType<*, *>> =
+    types.associateBy { it.firstByte.code }
+
+internal val dataTypeMap = mapOfTypes(
+    NullType, BooleanType, SimpleStringType, BulkStringType,
+    IntegerType, DoubleType, BigNumberType, ArrayType,
+    SimpleErrorType, BulkErrorType
 )
