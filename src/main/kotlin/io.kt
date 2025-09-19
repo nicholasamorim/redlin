@@ -1,29 +1,28 @@
 package org.redlin
 
-import org.redlin.protocol.CRLF
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.nio.charset.StandardCharsets.UTF_8
-
+import org.redlin.protocol.CRLF
 
 /* ---------- Minimal RESP helpers (just enough for PING) ---------- */
 
 /**
- * Reads **one Redis command name** from the socket and returns it as an uppercase-friendly `String`.
+ * Reads **one Redis command name** from the socket and returns it as an uppercase-friendly
+ * `String`.
  *
  * This understands two input formats:
  * 1) **RESP Arrays** (modern): `*<n>\r\n$<len>\r\n<bytes>\r\n ...`
- *    - Example (PING): `*1\r\n$4\r\nPING\r\n`  → returns `"PING"`.
- *    - We **only** read the first bulk string (the command name) and skip any extra args
- *      so the stream stays aligned for the next read. (PING [message] is ignored for now.)
- *
+ *     - Example (PING): `*1\r\n$4\r\nPING\r\n` → returns `"PING"`.
+ *     - We **only** read the first bulk string (the command name) and skip any extra args so the
+ *       stream stays aligned for the next read. (PING [message] is ignored for now.)
  * 2) **Inline protocol** (legacy / debugging): a single line separated by spaces
- *    - Example: `PING\r\n` → returns `"PING"`.
+ *     - Example: `PING\r\n` → returns `"PING"`.
  *
  * Return value:
  * - `String` command name (e.g., "PING") if a full command was read.
- * - `null` if the peer closed the connection cleanly (EOF) or the data was malformed such
- *   that we can’t continue.
+ * - `null` if the peer closed the connection cleanly (EOF) or the data was malformed such that we
+ *   can’t continue.
  *
  * Blocking behavior:
  * - This call **blocks** until enough bytes are available to decide what to return or until EOF.
@@ -33,27 +32,27 @@ import java.nio.charset.StandardCharsets.UTF_8
  *   reads start at a clean boundary.
  */
 internal fun readCommand(input: BufferedInputStream): String? {
-    input.mark(1)
-    val first = input.read()
-    if (first == -1) return null
+  input.mark(1)
+  val first = input.read()
+  if (first == -1) return null
 
-    return when (first.toChar()) {
-        '*' -> { // RESP Array: *<n>\r\n$<len>\r\n<bytes>\r\n ...
-            val count = readNumberLine(input)
-            if (count <= 0) return null
-            // Expect first bulk string to be the command
-            val cmd = readBulkString(input) ?: return null
-            // Ignore additional args for now (keeps protocol state aligned)
-            repeat(count - 1) { _ -> skipRespEntity(input) }
-            cmd
-        }
-        else -> {
-            // Inline protocol (legacy): we already consumed one byte – put it back into the line
-            input.reset()
-            val line = readLineCRLF(input) ?: return null
-            line.trim().split(' ', '\t').firstOrNull() ?: ""
-        }
+  return when (first.toChar()) {
+    '*' -> { // RESP Array: *<n>\r\n$<len>\r\n<bytes>\r\n ...
+      val count = readNumberLine(input)
+      if (count <= 0) return null
+      // Expect first bulk string to be the command
+      val cmd = readBulkString(input) ?: return null
+      // Ignore additional args for now (keeps protocol state aligned)
+      repeat(count - 1) { _ -> skipRespEntity(input) }
+      cmd
     }
+    else -> {
+      // Inline protocol (legacy): we already consumed one byte – put it back into the line
+      input.reset()
+      val line = readLineCRLF(input) ?: return null
+      line.trim().split(' ', '\t').firstOrNull() ?: ""
+    }
+  }
 }
 
 /**
@@ -70,15 +69,14 @@ internal fun readCommand(input: BufferedInputStream): String? {
  * - This function **does not flush** the stream. Call `out.flush()` after a batch of writes.
  */
 internal fun writeSimpleString(out: BufferedOutputStream, s: String) {
-    out.write(("+$s$CRLF").toByteArray(UTF_8))
-
+  out.write(("+$s$CRLF").toByteArray(UTF_8))
 }
 
 /**
  * Writes a RESP **Error**: `-<message>\r\n`.
  *
- * Clients treat this as an error reply. Redis conventions often prefix with a type, e.g.
- * `-ERR unknown command 'FOO'\r\n`, but for validation any text is acceptable.
+ * Clients treat this as an error reply. Redis conventions often prefix with a type, e.g. `-ERR
+ * unknown command 'FOO'\r\n`, but for validation any text is acceptable.
  *
  * Example:
  * ```text
@@ -89,7 +87,7 @@ internal fun writeSimpleString(out: BufferedOutputStream, s: String) {
  * - This function **does not flush** the stream. Call `out.flush()` after writing.
  */
 internal fun writeError(out: BufferedOutputStream, s: String) {
-    out.write(("-$s$CRLF").toByteArray(UTF_8))
+  out.write(("-$s$CRLF").toByteArray(UTF_8))
 }
 
 /** :<number>\r\n */
@@ -104,7 +102,7 @@ internal fun writeBulkString(out: BufferedOutputStream, s: String) =
 internal fun writeNullBulkString(out: BufferedOutputStream) =
     out.write("\$-1$CRLF".toByteArray(UTF_8))
 
-/** *<n>\r\n  (array header; useful when you compose arrays manually) */
+/** *<n>\r\n (array header; useful when you compose arrays manually) */
 internal fun writeArrayHeader(out: BufferedOutputStream, n: Int) =
     out.write(("*$n$CRLF").toByteArray(UTF_8))
 
@@ -125,19 +123,19 @@ internal fun writeArrayHeader(out: BufferedOutputStream, n: Int) =
  *   (mirrors many simple parsers) so the caller can decide whether that’s acceptable.
  */
 private fun readLineCRLF(input: BufferedInputStream): String? {
-    val sb = StringBuilder()
-    var prev = -1
-    while (true) {
-        val b = input.read()
-        if (b == -1) return if (sb.isEmpty()) null else sb.toString()
-        if (prev == '\r'.code && b == '\n'.code) {
-            // drop the trailing \r
-            sb.setLength(maxOf(0, sb.length - 1))
-            return sb.toString()
-        }
-        sb.append(b.toChar())
-        prev = b
+  val sb = StringBuilder()
+  var prev = -1
+  while (true) {
+    val b = input.read()
+    if (b == -1) return if (sb.isEmpty()) null else sb.toString()
+    if (prev == '\r'.code && b == '\n'.code) {
+      // drop the trailing \r
+      sb.setLength(maxOf(0, sb.length - 1))
+      return sb.toString()
     }
+    sb.append(b.toChar())
+    prev = b
+  }
 }
 
 /**
@@ -155,8 +153,8 @@ private fun readLineCRLF(input: BufferedInputStream): String? {
  * - Input bytes: `"abc\r\n"` → returns `-1`.
  */
 private fun readNumberLine(input: BufferedInputStream): Int {
-    val line = readLineCRLF(input) ?: return -1
-    return line.toIntOrNull() ?: -1
+  val line = readLineCRLF(input) ?: return -1
+  return line.toIntOrNull() ?: -1
 }
 
 /**
@@ -170,7 +168,8 @@ private fun readNumberLine(input: BufferedInputStream): Int {
  * - After reading `<len>` bytes, we **must** consume the trailing `\r\n`.
  *
  * Returns:
- * - The decoded string (UTF-8 by default via `decodeToString()`), or `null` on EOF / malformed data.
+ * - The decoded string (UTF-8 by default via `decodeToString()`), or `null` on EOF / malformed
+ *   data.
  *
  * Example (command name "PING"):
  * - Input: `"$4\r\nPING\r\n"` → returns `"PING"`.
@@ -179,34 +178,34 @@ private fun readNumberLine(input: BufferedInputStream): Int {
  * - If `<len>` is negative or the stream ends early, returns `null`.
  */
 private fun readBulkString(input: BufferedInputStream): String? {
-    val first = input.read()
-    if (first != '$'.code) return null
-    val len = readNumberLine(input)
-    if (len < 0) return null
-    val buf = ByteArray(len)
-    var read = 0
-    while (read < len) {
-        val n = input.read(buf, read, len - read)
-        if (n == -1) return null
-        read += n
-    }
-    // consume trailing CRLF
-    if (input.read() != '\r'.code || input.read() != '\n'.code) return null
-    return buf.decodeToString()
+  val first = input.read()
+  if (first != '$'.code) return null
+  val len = readNumberLine(input)
+  if (len < 0) return null
+  val buf = ByteArray(len)
+  var read = 0
+  while (read < len) {
+    val n = input.read(buf, read, len - read)
+    if (n == -1) return null
+    read += n
+  }
+  // consume trailing CRLF
+  if (input.read() != '\r'.code || input.read() != '\n'.code) return null
+  return buf.decodeToString()
 }
 
 /**
  * Skips **one RESP entity** (of most common types) without interpreting its content.
  *
  * Why this exists:
- * - When we only care about the **first** token (e.g., the command name in an array),
- *   we still need to consume the remaining entities to keep the stream aligned for
- *   subsequent commands on the same connection.
+ * - When we only care about the **first** token (e.g., the command name in an array), we still need
+ *   to consume the remaining entities to keep the stream aligned for subsequent commands on the
+ *   same connection.
  *
  * Entities handled:
- * - Simple String: `+... \r\n`  → read and discard line
- * - Error: `-... \r\n`          → read and discard line
- * - Integer: `:... \r\n`        → read and discard line
+ * - Simple String: `+... \r\n` → read and discard line
+ * - Error: `-... \r\n` → read and discard line
+ * - Integer: `:... \r\n` → read and discard line
  * - Bulk String: `$<len>\r\n<bytes>\r\n` → skip `<len>` bytes + CRLF
  * - Array: `*<n>\r\n<entity>...` → recursively skip `n` nested entities
  * - Anything else: we try to resync by consuming a single line with [readLineCRLF].
@@ -214,28 +213,35 @@ private fun readBulkString(input: BufferedInputStream): String? {
  * If the stream ends (`-1`) we simply return.
  *
  * Notes:
- * - This is intentionally **permissive**: it aims to keep the connection usable rather than
- *   fail hard on unexpected inputs (useful for an educational/early-stage server).
+ * - This is intentionally **permissive**: it aims to keep the connection usable rather than fail
+ *   hard on unexpected inputs (useful for an educational/early-stage server).
  */
 private fun skipRespEntity(input: BufferedInputStream) {
-    when (input.read()) {
-        -1 -> return
-        '+'.code, '-'.code, ':'.code -> { readLineCRLF(input) } // simple string / error / integer
-        '$'.code -> {
-            val len = readNumberLine(input)
-            if (len >= 0) {
-                var toSkip = len + 2 // plus CRLF
-                while (toSkip > 0) {
-                    val skipped = input.skip(toSkip.toLong()).toInt()
-                    if (skipped <= 0) break
-                    toSkip -= skipped
-                }
-            }
+  when (input.read()) {
+    -1 -> return
+    '+'.code,
+    '-'.code,
+    ':'.code -> {
+      readLineCRLF(input)
+    } // simple string / error / integer
+    '$'.code -> {
+      val len = readNumberLine(input)
+      if (len >= 0) {
+        var toSkip = len + 2 // plus CRLF
+        while (toSkip > 0) {
+          val skipped = input.skip(toSkip.toLong()).toInt()
+          if (skipped <= 0) break
+          toSkip -= skipped
         }
-        '*'.code -> {
-            val n = readNumberLine(input)
-            repeat(n.coerceAtLeast(0)) { skipRespEntity(input) }
-        }
-        else -> { /* unknown – try to resync by reading a line */ readLineCRLF(input) }
+      }
     }
+    '*'.code -> {
+      val n = readNumberLine(input)
+      repeat(n.coerceAtLeast(0)) { skipRespEntity(input) }
+    }
+    else -> {
+      /* unknown – try to resync by reading a line */
+      readLineCRLF(input)
+    }
+  }
 }
