@@ -11,7 +11,7 @@ sealed interface Error {
 
 sealed interface ErrorType : Deserializer<Error>
 
-data class SimpleError(override val prefix: String, override val message: String) : Error {
+data class SimpleError(override val prefix: String = "ERR", override val message: String) : Error {
     init {
         require(!message.contains('\r') && !message.contains('\n')) {
             "Error cannot contain '\\r' or '\\n'"

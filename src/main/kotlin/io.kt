@@ -4,6 +4,8 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.nio.charset.StandardCharsets.UTF_8
 import org.redlin.protocol.CRLF
+import org.redlin.protocol.types.SimpleError
+import org.redlin.protocol.types.SimpleErrorType
 
 /* ---------- Minimal RESP helpers (just enough for PING) ---------- */
 
@@ -55,22 +57,8 @@ internal fun readCommand(input: BufferedInputStream): String? {
     }
 }
 
-/**
- * Writes a RESP **Error**: `-<message>\r\n`.
- *
- * Clients treat this as an error reply. Redis conventions often prefix with a type, e.g. `-ERR
- * unknown command 'FOO'\r\n`, but for validation any text is acceptable.
- *
- * Example:
- * ```text
- * writeError(out, "ERR unknown command 'FOO'")  // sends: -ERR unknown command 'FOO'\r\n
- * ```
- *
- * Notes:
- * - This function **does not flush** the stream. Call `out.flush()` after writing.
- */
-internal fun writeError(out: BufferedOutputStream, s: String) {
-    out.write(("-$s$CRLF").toByteArray(UTF_8))
+internal fun writeSimpleError(out: BufferedOutputStream, message: String) {
+    out.write(SimpleErrorType.serialize(SimpleError(message = message)))
 }
 
 /** :<number>\r\n */

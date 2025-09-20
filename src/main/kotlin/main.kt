@@ -6,8 +6,6 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.Executors
-import org.redlin.protocol.types.SimpleError
-import org.redlin.protocol.types.SimpleErrorType
 import org.redlin.protocol.types.SimpleStringType
 
 fun main() {
@@ -36,13 +34,7 @@ private fun handleClient(s: Socket) {
             println("Got command $cmd")
             when (cmd.uppercase()) {
                 "PING" -> output.write(SimpleStringType.serialize("PONG"))
-                else ->
-                    output.write(
-                        SimpleErrorType.serialize(
-                            SimpleError(prefix = "ERR", message = "unknown command '$cmd'")
-                        )
-                    )
-            //                else -> writeError(output, "ERR unknown command '$cmd'")
+                else -> writeSimpleError(output, "unknown command '$cmd'")
             }
             output.flush()
         }
