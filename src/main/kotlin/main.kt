@@ -6,7 +6,6 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.Executors
-import org.redlin.protocol.types.SimpleStringType
 
 fun main() {
     val server = ServerSocket(6379, 1024, InetAddress.getByName("127.0.0.1"))
@@ -30,12 +29,15 @@ private fun handleClient(s: Socket) {
         val output = BufferedOutputStream(it.getOutputStream())
 
         while (true) {
-            val cmd = readCommand(input) ?: break
-            println("Got command $cmd")
-            when (cmd.uppercase()) {
-                "PING" -> output.write(SimpleStringType.serialize("PONG"))
-                else -> writeSimpleError(output, "unknown command '$cmd'")
-            }
+            val req = readRequest(input) ?: break
+            //            val cmd = readCommand(input) ?: break
+            //            println("Got command $cmd")
+            println("Got command ${req.command} args=${req.args}")
+            CommandManager.process(req, output)
+            //            when (cmd.uppercase()) {
+            //                "PING" -> output.write(SimpleStringType.serialize("PONG"))
+            //                else -> writeSimpleError(output, "unknown command '$cmd'")
+            //            }
             output.flush()
         }
     }
