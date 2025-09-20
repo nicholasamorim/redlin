@@ -32,44 +32,27 @@ import org.redlin.protocol.CRLF
  *   reads start at a clean boundary.
  */
 internal fun readCommand(input: BufferedInputStream): String? {
-  input.mark(1)
-  val first = input.read()
-  if (first == -1) return null
+    input.mark(1)
+    val first = input.read()
+    if (first == -1) return null
 
-  return when (first.toChar()) {
-    '*' -> { // RESP Array: *<n>\r\n$<len>\r\n<bytes>\r\n ...
-      val count = readNumberLine(input)
-      if (count <= 0) return null
-      // Expect first bulk string to be the command
-      val cmd = readBulkString(input) ?: return null
-      // Ignore additional args for now (keeps protocol state aligned)
-      repeat(count - 1) { _ -> skipRespEntity(input) }
-      cmd
+    return when (first.toChar()) {
+        '*' -> { // RESP Array: *<n>\r\n$<len>\r\n<bytes>\r\n ...
+            val count = readNumberLine(input)
+            if (count <= 0) return null
+            // Expect first bulk string to be the command
+            val cmd = readBulkString(input) ?: return null
+            // Ignore additional args for now (keeps protocol state aligned)
+            repeat(count - 1) { _ -> skipRespEntity(input) }
+            cmd
+        }
+        else -> {
+            // Inline protocol (legacy): we already consumed one byte – put it back into the line
+            input.reset()
+            val line = readLineCRLF(input) ?: return null
+            line.trim().split(' ', '\t').firstOrNull() ?: ""
+        }
     }
-    else -> {
-      // Inline protocol (legacy): we already consumed one byte – put it back into the line
-      input.reset()
-      val line = readLineCRLF(input) ?: return null
-      line.trim().split(' ', '\t').firstOrNull() ?: ""
-    }
-  }
-}
-
-/**
- * Writes a RESP **Simple String**: `+<text>\r\n`.
- *
- * Use this for successful, short, ASCII-ish responses (e.g., `+PONG\r\n`).
- *
- * Example:
- * ```text
- * writeSimpleString(out, "PONG")  // sends: +PONG\r\n
- * ```
- *
- * Notes:
- * - This function **does not flush** the stream. Call `out.flush()` after a batch of writes.
- */
-internal fun writeSimpleString(out: BufferedOutputStream, s: String) {
-  out.write(("+$s$CRLF").toByteArray(UTF_8))
 }
 
 /**
@@ -87,7 +70,7 @@ internal fun writeSimpleString(out: BufferedOutputStream, s: String) {
  * - This function **does not flush** the stream. Call `out.flush()` after writing.
  */
 internal fun writeError(out: BufferedOutputStream, s: String) {
-  out.write(("-$s$CRLF").toByteArray(UTF_8))
+    out.write(("-$s$CRLF").toByteArray(UTF_8))
 }
 
 /** :<number>\r\n */
@@ -123,19 +106,19 @@ internal fun writeArrayHeader(out: BufferedOutputStream, n: Int) =
  *   (mirrors many simple parsers) so the caller can decide whether that’s acceptable.
  */
 private fun readLineCRLF(input: BufferedInputStream): String? {
-  val sb = StringBuilder()
-  var prev = -1
-  while (true) {
-    val b = input.read()
-    if (b == -1) return if (sb.isEmpty()) null else sb.toString()
-    if (prev == '\r'.code && b == '\n'.code) {
-      // drop the trailing \r
-      sb.setLength(maxOf(0, sb.length - 1))
-      return sb.toString()
+    val sb = StringBuilder()
+    var prev = -1
+    while (true) {
+        val b = input.read()
+        if (b == -1) return if (sb.isEmpty()) null else sb.toString()
+        if (prev == '\r'.code && b == '\n'.code) {
+            // drop the trailing \r
+            sb.setLength(maxOf(0, sb.length - 1))
+            return sb.toString()
+        }
+        sb.append(b.toChar())
+        prev = b
     }
-    sb.append(b.toChar())
-    prev = b
-  }
 }
 
 /**
@@ -153,8 +136,8 @@ private fun readLineCRLF(input: BufferedInputStream): String? {
  * - Input bytes: `"abc\r\n"` → returns `-1`.
  */
 private fun readNumberLine(input: BufferedInputStream): Int {
-  val line = readLineCRLF(input) ?: return -1
-  return line.toIntOrNull() ?: -1
+    val line = readLineCRLF(input) ?: return -1
+    return line.toIntOrNull() ?: -1
 }
 
 /**
@@ -178,20 +161,20 @@ private fun readNumberLine(input: BufferedInputStream): Int {
  * - If `<len>` is negative or the stream ends early, returns `null`.
  */
 private fun readBulkString(input: BufferedInputStream): String? {
-  val first = input.read()
-  if (first != '$'.code) return null
-  val len = readNumberLine(input)
-  if (len < 0) return null
-  val buf = ByteArray(len)
-  var read = 0
-  while (read < len) {
-    val n = input.read(buf, read, len - read)
-    if (n == -1) return null
-    read += n
-  }
-  // consume trailing CRLF
-  if (input.read() != '\r'.code || input.read() != '\n'.code) return null
-  return buf.decodeToString()
+    val first = input.read()
+    if (first != '$'.code) return null
+    val len = readNumberLine(input)
+    if (len < 0) return null
+    val buf = ByteArray(len)
+    var read = 0
+    while (read < len) {
+        val n = input.read(buf, read, len - read)
+        if (n == -1) return null
+        read += n
+    }
+    // consume trailing CRLF
+    if (input.read() != '\r'.code || input.read() != '\n'.code) return null
+    return buf.decodeToString()
 }
 
 /**
@@ -217,31 +200,31 @@ private fun readBulkString(input: BufferedInputStream): String? {
  *   hard on unexpected inputs (useful for an educational/early-stage server).
  */
 private fun skipRespEntity(input: BufferedInputStream) {
-  when (input.read()) {
-    -1 -> return
-    '+'.code,
-    '-'.code,
-    ':'.code -> {
-      readLineCRLF(input)
-    } // simple string / error / integer
-    '$'.code -> {
-      val len = readNumberLine(input)
-      if (len >= 0) {
-        var toSkip = len + 2 // plus CRLF
-        while (toSkip > 0) {
-          val skipped = input.skip(toSkip.toLong()).toInt()
-          if (skipped <= 0) break
-          toSkip -= skipped
+    when (input.read()) {
+        -1 -> return
+        '+'.code,
+        '-'.code,
+        ':'.code -> {
+            readLineCRLF(input)
+        } // simple string / error / integer
+        '$'.code -> {
+            val len = readNumberLine(input)
+            if (len >= 0) {
+                var toSkip = len + 2 // plus CRLF
+                while (toSkip > 0) {
+                    val skipped = input.skip(toSkip.toLong()).toInt()
+                    if (skipped <= 0) break
+                    toSkip -= skipped
+                }
+            }
         }
-      }
+        '*'.code -> {
+            val n = readNumberLine(input)
+            repeat(n.coerceAtLeast(0)) { skipRespEntity(input) }
+        }
+        else -> {
+            /* unknown – try to resync by reading a line */
+            readLineCRLF(input)
+        }
     }
-    '*'.code -> {
-      val n = readNumberLine(input)
-      repeat(n.coerceAtLeast(0)) { skipRespEntity(input) }
-    }
-    else -> {
-      /* unknown – try to resync by reading a line */
-      readLineCRLF(input)
-    }
-  }
 }
