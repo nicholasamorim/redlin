@@ -1,11 +1,11 @@
 package org.redlin
 
-import java.io.BufferedOutputStream
+data class ConnectionContext(val writer: ProtocolWriter)
 
 data class Request(val command: String, val args: List<String>)
 
 fun interface RequestHandler {
-    fun handle(req: Request, out: BufferedOutputStream)
+    fun handle(req: Request, ctx: ConnectionContext)
 }
 
 object CommandManager {
@@ -15,12 +15,12 @@ object CommandManager {
             // Add more: "ECHO" to CommandHandler(::handleEcho), "SET" to ::handleSet, etc.
         )
 
-    fun process(req: Request, out: BufferedOutputStream) {
+    fun process(req: Request, context: ConnectionContext) {
         val h = handlers[req.command.uppercase()]
         if (h == null) {
-            writeSimpleError(out, "unknown command '${req.command.lowercase()}'")
+            context.writer.error("unknown command '${req.command.lowercase()}'")
             return
         }
-        h.handle(req, out)
+        h.handle(req, context)
     }
 }

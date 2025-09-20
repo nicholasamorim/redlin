@@ -2,8 +2,31 @@ package org.redlin
 
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
+import org.redlin.protocol.types.BulkStringType
 import org.redlin.protocol.types.SimpleError
 import org.redlin.protocol.types.SimpleErrorType
+import org.redlin.protocol.types.SimpleStringType
+
+interface ProtocolWriter {
+    fun string(s: String)
+
+    fun bulkString(s: String)
+
+    fun error(message: String)
+
+    fun flush()
+}
+
+class BufferedProtocolWriter(private val out: BufferedOutputStream) : ProtocolWriter {
+    override fun string(s: String) = out.write(SimpleStringType.serialize(s))
+
+    override fun bulkString(s: String) = out.write(BulkStringType.serialize(s))
+
+    override fun error(message: String) =
+        out.write(SimpleErrorType.serialize(SimpleError(message = message)))
+
+    override fun flush() = out.flush()
+}
 
 /**
  * Reads one RESP request (array of bulk strings, or inline) and returns the command + args. Returns
@@ -38,10 +61,6 @@ internal fun readRequest(input: BufferedInputStream): Request? {
             Request(tokens[0], tokens.drop(1))
         }
     }
-}
-
-internal fun writeSimpleError(out: BufferedOutputStream, message: String) {
-    out.write(SimpleErrorType.serialize(SimpleError(message = message)))
 }
 
 /* ---------- RESP parsing utilities ---------- */

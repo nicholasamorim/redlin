@@ -1,14 +1,9 @@
 package org.redlin
 
-import java.io.BufferedOutputStream
-import org.redlin.protocol.types.BulkStringType
-import org.redlin.protocol.types.SimpleStringType
-
-internal fun handlePing(req: Request, out: BufferedOutputStream) {
+internal fun handlePing(req: Request, ctx: ConnectionContext) {
     when (req.args.size) {
-        0 -> out.write(SimpleStringType.serialize("PONG"))
-        1 -> out.write(BulkStringType.serialize(req.args[0]))
-
-        else -> writeSimpleError(out, "wrong number of arguments for 'ping' command")
+        0 -> ctx.writer.string("PONG")
+        1 -> ctx.writer.bulkString(req.args[0])
+        else -> ctx.writer.error("wrong number of arguments for 'ping' command")
     }
 }

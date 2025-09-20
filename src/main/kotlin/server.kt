@@ -26,13 +26,15 @@ private fun handleClient(s: Socket) {
 
     s.use {
         val input = BufferedInputStream(it.getInputStream())
-        val output = BufferedOutputStream(it.getOutputStream())
+
+        val writer = BufferedProtocolWriter(BufferedOutputStream(it.getOutputStream()))
+        val context = ConnectionContext(writer)
 
         while (true) {
             val req = readRequest(input) ?: break
             println("Got command ${req.command} args=${req.args}")
-            CommandManager.process(req, output)
-            output.flush()
+            CommandManager.process(req, context)
+            context.writer.flush()
         }
     }
 }
