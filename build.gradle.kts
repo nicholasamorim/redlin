@@ -1,9 +1,15 @@
 plugins {
     kotlin("jvm") version "2.2.0"
+    application
 }
 
 group = "org.redlin"
 version = "1.0-SNAPSHOT"
+
+application {
+    // Point this to your main function
+    mainClass.set("org.redlin.MainKt")
+}
 
 repositories {
     mavenCentral()
