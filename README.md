@@ -15,7 +15,7 @@
 
 I'm learning Kotlin and after reading [Kotlin: An Illustrated Guide](https://typealias.com/start/) and [Kotlin Design Patterns and Best Practices](https://www.oreilly.com/library/view/kotlin-design-patterns/9781805127765/), I decided to give this a go taking advantage of the structure in the [CodeCrafters challenge](https://app.codecrafters.io/courses/redis/overview).
 
-So take this for what it is: a learning project that is meant as a proof of a few concepts.
+So take this for what it is: a learning project.
 
 At the moment it is essentially a wrapper for a [ConcurrentHashMap](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ConcurrentHashMap.html).
 
@@ -35,9 +35,11 @@ Run it with `./gradlew run` then you can just use a normal `redis-cli` to commun
 
 # To Do
 
-- Add periodic eviction, currently only lazy eviction is supported
-- Implement basic transaction to support INCR.
-- Replication.
-- Implement support for lists.
-- Aim to use the coroutines properly and stop using ConcurrentHashMap.
-- RDB Persistence.
+- Add periodic eviction, currently only lazy eviction is supported.
+- Implement basic transaction to support [INCR](https://redis.io/docs/latest/commands/incr/).
+- Implement support for lists
+- Aim to use the coroutines properly and stop using ConcurrentHashMap
+- RDB Persistence
+- Replication
+- Proper logging
+- Tests
