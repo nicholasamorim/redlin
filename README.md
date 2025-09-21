@@ -38,7 +38,7 @@ Run it with `./gradlew run` then you can just use a normal `redis-cli` to commun
 - Add periodic eviction, currently only lazy eviction is supported.
 - Implement basic transaction to support [INCR](https://redis.io/docs/latest/commands/incr/).
 - Implement support for lists
-- Aim to use the coroutines properly and stop using ConcurrentHashMap
+- Aim to use the coroutines properly and stop using ConcurrentHashMap by potentially implementing an Actor pattern.
 - RDB Persistence
 - Replication
 - Proper logging
