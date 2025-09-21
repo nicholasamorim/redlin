@@ -10,10 +10,9 @@ import org.redlin.commands.SetStatus
 data class StorageData(
     val value: ByteArray,
     val creationTime: Long = nowMs(),
-    val expiry: Long? = null, // millis
+    val expiry: Long? = null, // ms
 ) {
 
-    /** Returns true if this entry has an expiry and is now expired. */
     fun isExpired(nowMillis: Long = nowMs()): Boolean {
         val e = expiry ?: return false
         return nowMillis - creationTime >= e

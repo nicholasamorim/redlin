@@ -19,6 +19,8 @@ So take this for what it is: a learning project.
 
 At the moment it is essentially a wrapper for a [ConcurrentHashMap](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ConcurrentHashMap.html).
 
+This code is heavily inspired by [Rust Projects - Write a Redis Clone](https://leanpub.com/rustprojects-redis) and [resp-kotlin](https://github.com/S1000f/resp-kotlin).
+
 # Run
 
 Run it with `./gradlew run` then you can just use a normal `redis-cli` to communicate with the Redlin server.
